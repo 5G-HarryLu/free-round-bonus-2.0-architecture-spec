@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRB 2.0 Documentation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .main-header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid #334155;
+            padding: 24px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .logo span {
+            background: #10b981;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            background: #0f172a;
+            padding: 4px;
+            border-radius: 10px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tab-btn:hover {
+            background: #334155;
+            color: #fff;
+        }
+        .tab-btn.active {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .tab-btn .icon {
+            font-size: 16px;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ==================== SHARED STYLES ==================== */
+        section {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+        h2 {
+            font-size: 20px;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        h3 {
+            font-size: 16px;
+            color: #94a3b8;
+            margin: 24px 0 12px 0;
+        }
+        h4 {
+            font-size: 14px;
+            color: #64748b;
+            margin: 16px 0 8px 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin: 16px 0;
+        }
+        th {
+            text-align: left;
+            padding: 12px;
+            background: #0f172a;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #334155;
+        }
+        tr:hover td { background: rgba(59, 130, 246, 0.1); }
+
+        /* Code */
+        code {
+            font-family: 'SF Mono', Monaco, monospace;
+            background: #334155;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        pre {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 12px 0;
+        }
+        pre code { background: none; padding: 0; }
+        .keyword { color: #c084fc; }
+        .type { color: #22d3ee; }
+        .string { color: #86efac; }
+        .number { color: #fbbf24; }
+        .comment { color: #64748b; }
+        .property { color: #60a5fa; }
+
+        /* Notes */
+        .note {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+        .note-title {
+            color: #60a5fa;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+        .warning .note-title { color: #fbbf24; }
+
+        /* Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        @media (max-width: 900px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .header-content { flex-direction: column; }
+            .tab-nav { width: 100%; justify-content: center; flex-wrap: wrap; }
+        }
+
+        /* ==================== ARCHITECTURE TAB ==================== */
+        .diagram-section {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+        .diagram-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-threshold { background: #0891b2; color: #fff; }
+        .badge-direct { background: #8b5cf6; color: #fff; }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .footer-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .footer-card h3 {
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .footer-card ul {
+            list-style: none;
+            font-size: 13px;
+        }
+        .footer-card li {
+            margin-bottom: 6px;
+            padding-left: 16px;
+            position: relative;
+        }
+        .footer-card li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #64748b;
+        }
+
+        /* ==================== SPEC TAB ==================== */
+        .method {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .method-get { background: #10b981; color: #fff; }
+        .method-post { background: #3b82f6; color: #fff; }
+        .method-put { background: #f59e0b; color: #fff; }
+        .method-delete { background: #ef4444; color: #fff; }
+
+        .endpoint {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .endpoint-path {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 15px;
+            color: #e2e8f0;
+        }
+        .endpoint-desc {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .required { color: #f87171; font-size: 11px; font-weight: 600; }
+        .optional { color: #64748b; font-size: 11px; }
+        .field-type { color: #22d3ee; font-family: monospace; font-size: 12px; }
+
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .status-pending { background: #fbbf24; color: #000; }
+        .status-inuse { background: #3b82f6; color: #fff; }
+        .status-completed { background: #10b981; color: #fff; }
+        .status-expired { background: #6b7280; color: #fff; }
+
+        .pubsub-channel {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        .channel-name {
+            font-family: monospace;
+            font-size: 14px;
+            color: #fca5a5;
+            margin-bottom: 8px;
+        }
+
+        /* Spec Sub Navigation */
+        .spec-nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: inline-block;
+            border: 1px solid transparent;
+        }
+        .spec-nav-link:hover {
+            background: #334155;
+            color: #fff;
+            border-color: #475569;
+        }
+        .spec-nav-link.active {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        /* ==================== Q&A TAB ==================== */
+        .decisions {
+            background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        .decisions h2 {
+            color: #86efac;
+            font-size: 16px;
+            margin-bottom: 16px;
+            border: none;
+            padding: 0;
+        }
+        .decision-list {
+            list-style: none;
+        }
+        .decision-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(134, 239, 172, 0.2);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .decision-list li:last-child { border-bottom: none; }
+        .decision-number {
+            background: #22c55e;
+            color: #052e16;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .qa-card {
+            background: #1e293b;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .question {
+            background: #334155;
+            padding: 20px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .q-badge {
+            background: #f59e0b;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .answer {
+            padding: 24px;
+        }
+        .answer-label {
+            color: #10b981;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .solutions { margin-top: 16px; }
+        .solution {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+        .solution.recommended {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .solution-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .solution-title { font-weight: 600; font-size: 14px; }
+        .badge-recommended { background: #10b981; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; }
+        .badge-alternative { background: #6b7280; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; }
+        .solution p { color: #94a3b8; font-size: 13px; }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .comparison-box {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .comparison-box h4 { font-size: 13px; margin-bottom: 12px; color: #94a3b8; }
+        .comparison-box.before { border-top: 3px solid #ef4444; }
+        .comparison-box.after { border-top: 3px solid #10b981; }
+
+        /* Footer */
+        .main-footer {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            font-size: 13px;
+            border-top: 1px solid #334155;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Tab Navigation -->
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>FRB 2.0</h1>
+                <span>Documentation</span>
+            </div>
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="architecture">
+                    <span class="icon">📐</span> Architecture
+                </button>
+                <button class="tab-btn" data-tab="spec">
+                    <span class="icon">📋</span> API & Schema
+                </button>
+                <button class="tab-btn" data-tab="qa">
+                    <span class="icon">💬</span> Q&A
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ==================== ARCHITECTURE TAB ==================== -->
+    <div id="architecture" class="tab-content active">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <h2 style="border: none; display: block; font-size: 24px;">System Architecture</h2>
+            <p style="color: #94a3b8;">Free Round Bonus - 多層級階梯門檻系統</p>
+        </div>
+
+        <!-- Flow A: Threshold Mode -->
+        <div class="diagram-section">
+            <div class="diagram-title">
+                <span class="badge badge-threshold">Flow A</span>
+                門檻模式 - 玩家下注達標自動發券
+            </div>
+            <svg viewBox="0 0 1100 300" style="width: 100%; height: auto;">
+                <defs>
+                    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
+                    </marker>
+                    <marker id="arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#f87171"/>
+                    </marker>
+                    <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#ea580c"/>
+                    </marker>
+                </defs>
+
+                <!-- Row 1: CDC Flow (OceanBase -> Kafka -> Aggregator) -->
+                <!-- OceanBase CDC Source -->
+                <rect x="20" y="25" width="100" height="45" fill="#0f766e"/>
+                <ellipse cx="70" cy="70" rx="50" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <ellipse cx="70" cy="25" rx="50" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <text x="70" y="50" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">OceanBase</text>
+                <text x="70" y="95" text-anchor="middle" fill="#2dd4bf" font-size="8">(Bet Records)</text>
+
+                <!-- Kafka -->
+                <rect x="180" y="35" width="80" height="40" rx="6" fill="#ea580c"/>
+                <text x="220" y="60" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Kafka</text>
+
+                <!-- Aggregator -->
+                <rect x="320" y="30" width="110" height="50" rx="8" fill="#0891b2"/>
+                <text x="375" y="52" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Aggregator</text>
+                <text x="375" y="68" text-anchor="middle" fill="#a5f3fc" font-size="9">Consume & 累計</text>
+
+                <!-- CDC Arrows -->
+                <path d="M 120 50 L 180 55" stroke="#ea580c" stroke-width="2" marker-end="url(#arrow-orange)"/>
+                <text x="150" y="42" text-anchor="middle" fill="#ea580c" font-size="8">CDC</text>
+                
+                <path d="M 260 55 L 320 55" stroke="#ea580c" stroke-width="2" marker-end="url(#arrow-orange)"/>
+                <text x="290" y="48" text-anchor="middle" fill="#94a3b8" font-size="8">③</text>
+
+                <!-- Row 2: Main Flow -->
+                <!-- Back Office -->
+                <rect x="20" y="130" width="120" height="60" rx="8" fill="#7c3aed"/>
+                <text x="80" y="157" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Back Office</text>
+                <text x="80" y="175" text-anchor="middle" fill="#c4b5fd" font-size="10">活動設定 UI</text>
+
+                <!-- MySQL -->
+                <rect x="175" y="130" width="90" height="45" fill="#0f766e"/>
+                <ellipse cx="220" cy="175" rx="45" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <ellipse cx="220" cy="130" rx="45" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <text x="220" y="158" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">MySQL</text>
+
+                <!-- FRB Service Box (includes Aggregator + Campaign) -->
+                <rect x="310" y="20" width="135" height="180" rx="10" fill="none" stroke="#0891b2" stroke-width="2" stroke-dasharray="6,3"/>
+                <text x="377" y="212" text-anchor="middle" fill="#22d3ee" font-size="10" font-weight="600">FRB Service</text>
+
+                <!-- Campaign -->
+                <rect x="320" y="130" width="110" height="55" rx="8" fill="#0891b2"/>
+                <text x="375" y="155" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Campaign</text>
+                <text x="375" y="172" text-anchor="middle" fill="#a5f3fc" font-size="9">門檻檢查 & 發票</text>
+
+                <!-- Aggregator to Campaign arrow -->
+                <path d="M 375 80 L 375 130" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+                <!-- OceanBase (Tickets) -->
+                <rect x="475" y="130" width="90" height="45" fill="#0f766e"/>
+                <ellipse cx="520" cy="175" rx="45" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <ellipse cx="520" cy="130" rx="45" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <text x="520" y="158" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">OceanBase</text>
+
+                <!-- Redis -->
+                <rect x="610" y="125" width="100" height="50" fill="#dc2626"/>
+                <ellipse cx="660" cy="175" rx="50" ry="18" fill="#dc2626" stroke="#f87171" stroke-width="2"/>
+                <ellipse cx="660" cy="125" rx="50" ry="18" fill="#dc2626" stroke="#f87171" stroke-width="2"/>
+                <text x="660" y="148" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Redis</text>
+                <text x="660" y="163" text-anchor="middle" fill="#fca5a5" font-size="9">Pub/Sub</text>
+
+                <!-- GameServer -->
+                <rect x="780" y="125" width="130" height="55" rx="8" fill="#c2410c"/>
+                <text x="845" y="150" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">GameServer</text>
+                <text x="845" y="168" text-anchor="middle" fill="#fed7aa" font-size="10">執行 Free Round</text>
+
+                <!-- Game Client -->
+                <rect x="970" y="125" width="110" height="55" rx="8" fill="#9a3412"/>
+                <text x="1025" y="150" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Game Client</text>
+                <text x="1025" y="168" text-anchor="middle" fill="#fed7aa" font-size="9">UI 顯示</text>
+
+                <!-- Ticket Status Legend -->
+                <rect x="850" y="25" width="230" height="85" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                <text x="965" y="45" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600">Ticket Status</text>
+                <text x="870" y="65" fill="#fbbf24" font-size="9">● pending</text>
+                <text x="980" y="65" fill="#3b82f6" font-size="9">● inuse</text>
+                <text x="870" y="82" fill="#10b981" font-size="9">● completed</text>
+                <text x="980" y="82" fill="#6b7280" font-size="9">● expired</text>
+                <text x="870" y="99" fill="#f472b6" font-size="9">● early_completed</text>
+
+                <!-- Main Flow Arrows -->
+                <path d="M 140 160 L 175 160" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                <text x="157" y="152" text-anchor="middle" fill="#94a3b8" font-size="8">①</text>
+
+                <path d="M 265 155 L 320 155" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="4"/>
+                <text x="292" y="148" text-anchor="middle" fill="#94a3b8" font-size="8">②</text>
+
+                <path d="M 430 155 L 475 155" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                <text x="452" y="148" text-anchor="middle" fill="#94a3b8" font-size="8">④</text>
+
+                <path d="M 430 165 L 610 165" stroke="#f87171" stroke-width="2" marker-end="url(#arrow-red)"/>
+                <text x="520" y="185" text-anchor="middle" fill="#fca5a5" font-size="9">⑤ PUBLISH ticket:created</text>
+
+                <path d="M 710 150 L 780 150" stroke="#f87171" stroke-width="2" marker-end="url(#arrow-red)"/>
+                <text x="745" y="143" text-anchor="middle" fill="#fca5a5" font-size="8">⑥</text>
+
+                <path d="M 910 152 L 970 152" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                <text x="940" y="145" text-anchor="middle" fill="#94a3b8" font-size="8">⑦</text>
+
+                <!-- GameServer -> OceanBase (Update ticket status) - route below -->
+                <path d="M 845 180 L 845 205 L 520 205 L 520 190" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)" fill="none"/>
+                <text x="700" y="220" text-anchor="middle" fill="#86efac" font-size="9">⑧ UPDATE ticket status</text>
+
+                <!-- Step descriptions -->
+                <text x="20" y="245" fill="#94a3b8" font-size="10">
+                    <tspan>① 建立活動/層級</tspan>
+                    <tspan x="20" dy="14">② 讀取門檻設定</tspan>
+                    <tspan x="20" dy="14">③ OceanBase CDC → Kafka → Aggregator</tspan>
+                </text>
+                <text x="350" y="245" fill="#94a3b8" font-size="10">
+                    <tspan>④ 寫入票券記錄</tspan>
+                    <tspan x="350" dy="14">⑤ 發布 ticket:created</tspan>
+                    <tspan x="350" dy="14">⑥ 訂閱並接收票券</tspan>
+                </text>
+                <text x="620" y="245" fill="#94a3b8" font-size="10">
+                    <tspan>⑦ 執行 Free Round</tspan>
+                    <tspan x="620" dy="14">⑧ 更新 OceanBase ticket status</tspan>
+                </text>
+            </svg>
+        </div>
+
+        <!-- Flow B: Direct API Mode -->
+        <div class="diagram-section">
+            <div class="diagram-title">
+                <span class="badge badge-direct">Flow B</span>
+                直接送券模式 - Operator 透過 API 送券給特定玩家
+            </div>
+            <svg viewBox="0 0 1100 200" style="width: 100%; height: auto;">
+                <defs>
+                    <marker id="arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
+                    </marker>
+                    <marker id="arrow2-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/>
+                    </marker>
+                    <marker id="arrow2-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#f87171"/>
+                    </marker>
+                </defs>
+
+                <rect x="20" y="50" width="120" height="70" rx="8" fill="#7c3aed"/>
+                <text x="80" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Operator</text>
+                <text x="80" y="100" text-anchor="middle" fill="#c4b5fd" font-size="10">後台 / CRM</text>
+
+                <rect x="200" y="50" width="130" height="70" rx="8" fill="#6366f1"/>
+                <text x="265" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Platform API</text>
+                <text x="265" y="100" text-anchor="middle" fill="#c7d2fe" font-size="10">入口 Gateway</text>
+
+                <!-- FRB Service Box with dashed border -->
+                <rect x="365" y="35" width="140" height="100" rx="10" fill="none" stroke="#0891b2" stroke-width="2" stroke-dasharray="6,3"/>
+                <text x="435" y="145" text-anchor="middle" fill="#22d3ee" font-size="10" font-weight="600">FRB Service</text>
+
+                <!-- FRB Service inner component -->
+                <rect x="375" y="50" width="120" height="55" rx="8" fill="#0891b2"/>
+                <text x="435" y="75" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Campaign</text>
+                <text x="435" y="92" text-anchor="middle" fill="#a5f3fc" font-size="9">直接發票 (無門檻)</text>
+
+                <!-- OceanBase -->
+                <rect x="540" y="45" width="90" height="45" fill="#0f766e"/>
+                <ellipse cx="585" cy="90" rx="45" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <ellipse cx="585" cy="45" rx="45" ry="15" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
+                <text x="585" y="72" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">OceanBase</text>
+
+                <!-- Redis -->
+                <rect x="665" y="45" width="90" height="45" fill="#dc2626"/>
+                <ellipse cx="710" cy="90" rx="45" ry="15" fill="#dc2626" stroke="#f87171" stroke-width="2"/>
+                <ellipse cx="710" cy="45" rx="45" ry="15" fill="#dc2626" stroke="#f87171" stroke-width="2"/>
+                <text x="710" y="65" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Redis</text>
+                <text x="710" y="80" text-anchor="middle" fill="#fca5a5" font-size="8">Pub/Sub</text>
+
+                <rect x="790" y="42" width="120" height="60" rx="8" fill="#c2410c"/>
+                <text x="850" y="68" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">GameServer</text>
+                <text x="850" y="85" text-anchor="middle" fill="#fed7aa" font-size="9">執行 Free Round</text>
+
+                <rect x="945" y="42" width="100" height="60" rx="8" fill="#9a3412"/>
+                <text x="995" y="68" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Game Client</text>
+                <text x="995" y="85" text-anchor="middle" fill="#fed7aa" font-size="8">UI 顯示</text>
+
+                <path d="M 140 85 L 200 85" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrow2-purple)"/>
+                <text x="170" y="75" text-anchor="middle" fill="#a78bfa" font-size="9">①</text>
+
+                <path d="M 330 85 L 375 77" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrow2-purple)"/>
+                <text x="352" y="72" text-anchor="middle" fill="#a78bfa" font-size="9">②</text>
+
+                <!-- Campaign -> OceanBase -->
+                <path d="M 495 70 L 540 70" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)"/>
+                <text x="517" y="62" text-anchor="middle" fill="#94a3b8" font-size="9">③</text>
+
+                <!-- Campaign -> Redis (PUBLISH) -->
+                <path d="M 495 85 L 665 85" stroke="#f87171" stroke-width="2" marker-end="url(#arrow2-red)"/>
+                <text x="580" y="110" text-anchor="middle" fill="#fca5a5" font-size="8">④ PUBLISH ticket:created</text>
+
+                <path d="M 755 70 L 790 70" stroke="#f87171" stroke-width="2" marker-end="url(#arrow2-red)"/>
+                <text x="772" y="62" text-anchor="middle" fill="#fca5a5" font-size="9">⑤</text>
+
+                <path d="M 910 72 L 945 72" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)"/>
+                <text x="927" y="64" text-anchor="middle" fill="#94a3b8" font-size="9">⑥</text>
+
+                <!-- GameServer -> OceanBase (UPDATE status) -->
+                <path d="M 850 102 L 850 125 L 585 125 L 585 105" stroke="#10b981" stroke-width="2" marker-end="url(#arrow2)" fill="none"/>
+                <text x="717" y="140" text-anchor="middle" fill="#86efac" font-size="8">⑦ UPDATE ticket status</text>
+
+                <text x="20" y="155" fill="#94a3b8" font-size="10">
+                    <tspan font-weight="600" fill="#a78bfa">API Endpoints:</tspan>
+                    <tspan x="20" dy="16">POST /api/frb/tickets - 單張發券</tspan>
+                    <tspan x="20" dy="14">POST /api/frb/tickets/batch - 批量發券</tspan>
+                </text>
+                <text x="280" y="155" fill="#94a3b8" font-size="10">
+                    <tspan>① Operator 呼叫 API</tspan>
+                    <tspan x="280" dy="14">② Platform API 轉發至 FRB Service</tspan>
+                    <tspan x="280" dy="14">③ 寫入 OceanBase 票券記錄</tspan>
+                </text>
+                <text x="560" y="155" fill="#94a3b8" font-size="10">
+                    <tspan>④ PUBLISH ticket:created</tspan>
+                    <tspan x="560" dy="14">⑤ GameServer 收到票券通知</tspan>
+                    <tspan x="560" dy="14">⑥ 執行 Free Round / ⑦ UPDATE status</tspan>
+                </text>
+            </svg>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="diagram-section">
+            <div class="diagram-title">兩種模式比較</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th style="color: #22d3ee;">Flow A: 門檻模式</th>
+                        <th style="color: #a78bfa;">Flow B: 直接送券</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="color: #94a3b8;">觸發方式</td>
+                        <td>玩家下注累計達門檻</td>
+                        <td>Operator 主動呼叫 API</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8;">使用場景</td>
+                        <td>常態活動、多層級獎勵</td>
+                        <td>VIP 補償、行銷活動、特定玩家回饋</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8;">入口</td>
+                        <td>GameServer CDC → Aggregator</td>
+                        <td>Platform API Gateway</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8;">門檻檢查</td>
+                        <td>✓ 檢查 threshold / level / limit</td>
+                        <td>✗ 跳過 (直接發券)</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8;">後續流程</td>
+                        <td colspan="2">相同：Redis Pub/Sub → GameServer → Game Client</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="footer-grid">
+            <div class="footer-card">
+                <h3>Redis Pub/Sub Channels</h3>
+                <ul style="color: #fca5a5; font-family: monospace;">
+                    <li>frb:ticket:created</li>
+                    <li>frb:ticket:expiring</li>
+                    <li>frb:ticket:completed</li>
+                </ul>
+            </div>
+            <div class="footer-card">
+                <h3>Cap 計算公式</h3>
+                <ul>
+                    <li style="font-family: monospace; color: #fef3c7;">actual = min(raw_win, max(0, cap - accumulated))</li>
+                    <li>每次 Spin 即時套用</li>
+                    <li>使用 cents 整數運算</li>
+                </ul>
+            </div>
+            <div class="footer-card">
+                <h3>Ticket 狀態流</h3>
+                <ul>
+                    <li style="font-family: monospace;">pending → inuse → completed</li>
+                    <li style="font-family: monospace;">pending → expired</li>
+                    <li style="font-family: monospace;">inuse → expiring → expired</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Important Notes -->
+        <div style="background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 24px; margin-top: 32px;">
+            <h3 style="color: #60a5fa; margin-bottom: 16px; font-size: 16px;">📌 重要設計說明</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                
+                <!-- Note 1: Currency-based settings -->
+                <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border-left: 3px solid #fbbf24;">
+                    <h4 style="color: #fbbf24; font-size: 13px; margin-bottom: 8px;">💰 幣別設定</h4>
+                    <p style="color: #cbd5e1; font-size: 13px; line-height: 1.6;">
+                        FRB 的<strong style="color: #fde68a;">流水累積門檻</strong>與<strong style="color: #fde68a;">Max Payout</strong> 都需要 <strong style="color: #fde68a;">by 幣別</strong>設定。
+                        不同幣別的門檻與上限可能不同。
+                    </p>
+                </div>
+
+                <!-- Note 2: Campaign API -->
+                <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border-left: 3px solid #22d3ee;">
+                    <h4 style="color: #22d3ee; font-size: 13px; margin-bottom: 8px;">🔧 Campaign API</h4>
+                    <p style="color: #cbd5e1; font-size: 13px; line-height: 1.6;">
+                        Campaign API 可以<strong style="color: #a5f3fc;">直接 create campaign</strong>，不需要透過 Back Office UI。
+                        支援程式化建立活動。
+                    </p>
+                </div>
+
+                <!-- Note 3: Platform API Verification -->
+                <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border-left: 3px solid #f472b6;">
+                    <h4 style="color: #f472b6; font-size: 13px; margin-bottom: 8px;">🔐 Platform API 驗證機制</h4>
+                    <ul style="color: #cbd5e1; font-size: 13px; line-height: 1.8; padding-left: 16px; margin: 0;">
+                        <li><strong style="color: #fbcfe8;">Operator 驗證</strong>：驗證戳接口的 operator 是否為建立該活動的 operator</li>
+                        <li><strong style="color: #fbcfe8;">驗證位置</strong>：在 Platform API 層進行驗證</li>
+                        <li><strong style="color: #fbcfe8;">IP 白名單</strong>：沿用現有 Platform API 的 operator IP 驗證機制</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SPEC TAB ==================== -->
+    <div id="spec" class="tab-content">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <h2 style="border: none; display: block; font-size: 24px;">API & Database Schema</h2>
+            <p style="color: #94a3b8;">Technical Specification for Development</p>
+            <span style="display: inline-block; background: #10b981; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 12px;">Version 2.0 | 2026-01-13</span>
+        </div>
+
+        <!-- Sub Navigation for Spec -->
+        <nav style="background: #1e293b; padding: 12px; border-radius: 10px; margin-bottom: 32px; position: sticky; top: 80px; z-index: 50;">
+            <ul style="display: flex; justify-content: center; gap: 8px; list-style: none; flex-wrap: wrap;">
+                <li><a href="#spec-overview" class="spec-nav-link">Overview</a></li>
+                <li><a href="#spec-platform-api" class="spec-nav-link">Platform API</a></li>
+                <li><a href="#spec-frb-api" class="spec-nav-link">FRB Service API</a></li>
+                <li><a href="#spec-backoffice-api" class="spec-nav-link">Back Office API</a></li>
+                <li><a href="#spec-mysql" class="spec-nav-link">MySQL Schema</a></li>
+                <li><a href="#spec-oceanbase" class="spec-nav-link">OceanBase Schema</a></li>
+                <li><a href="#spec-redis" class="spec-nav-link">Redis Structure</a></li>
+                <li><a href="#spec-pubsub" class="spec-nav-link">Pub/Sub Events</a></li>
+            </ul>
+        </nav>
+
+        <!-- Overview -->
+        <section id="spec-overview">
+            <h2>📋 Overview</h2>
+            <div class="grid-2">
+                <div>
+                    <h3>兩種發券模式</h3>
+                    <table>
+                        <tr><td><strong>Flow A: 門檻模式</strong></td><td>玩家下注達標 → 自動發券</td></tr>
+                        <tr><td><strong>Flow B: 直接送券</strong></td><td>Operator API 呼叫 → 指定玩家發券</td></tr>
+                    </table>
+                </div>
+                <div>
+                    <h3>Ticket 狀態</h3>
+                    <table>
+                        <tr><td><span class="status status-pending">pending</span></td><td>已發券，等待使用</td></tr>
+                        <tr><td><span class="status status-inuse">inuse</span></td><td>正在使用中</td></tr>
+                        <tr><td><span class="status status-completed">completed</span></td><td>已完成（用完所有 Rounds）</td></tr>
+                        <tr><td><span class="status" style="background: #db2777; color: #fce7f3;">early_completed</span></td><td>提前結束（達到 Max Payout）</td></tr>
+                        <tr><td><span class="status status-expired">expired</span></td><td>已過期</td></tr>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Platform API -->
+        <section id="spec-platform-api">
+            <h2>🌐 Platform API</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">Operator 透過 Platform API 送券給特定玩家</p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/api/v1/frb/tickets</span>
+                </div>
+                <p class="endpoint-desc">發送單張 Free Round Bonus 給指定玩家</p>
+                
+                <h4>Request Body</h4>
+<pre><code>{
+  <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,
+  <span class="property">"game_id"</span>: <span class="string">"wild_bounty"</span>,
+  <span class="property">"currency"</span>: <span class="string">"USD"</span>,
+  <span class="property">"free_rounds"</span>: <span class="number">10</span>,
+  <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,
+  <span class="property">"max_payout_cents"</span>: <span class="number">50000</span>,
+  <span class="property">"validity_days"</span>: <span class="number">7</span>,
+  <span class="property">"reason"</span>: <span class="string">"VIP Compensation"</span>
+}</code></pre>
+
+                <h4>Response (201)</h4>
+<pre><code>{
+  <span class="property">"success"</span>: <span class="keyword">true</span>,
+  <span class="property">"data"</span>: {
+    <span class="property">"ticket_id"</span>: <span class="string">"frb_ticket_abc123"</span>,
+    <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,
+    <span class="property">"status"</span>: <span class="string">"pending"</span>,
+    <span class="property">"expires_at"</span>: <span class="string">"2026-01-20T00:00:00Z"</span>
+  }
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/api/v1/frb/tickets/batch</span>
+                </div>
+                <p class="endpoint-desc">批量發送 Free Round Bonus 給多位玩家</p>
+                
+                <h4>Request Body</h4>
+<pre><code>{
+  <span class="property">"game_id"</span>: <span class="string">"wild_bounty"</span>,
+  <span class="property">"currency"</span>: <span class="string">"USD"</span>,
+  <span class="property">"free_rounds"</span>: <span class="number">10</span>,
+  <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,
+  <span class="property">"max_payout_cents"</span>: <span class="number">50000</span>,
+  <span class="property">"validity_days"</span>: <span class="number">7</span>,
+  <span class="property">"member_ids"</span>: [<span class="string">"player_001"</span>, <span class="string">"player_002"</span>, <span class="string">"player_003"</span>]
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/v1/frb/tickets/{ticket_id}</span>
+                </div>
+                <p class="endpoint-desc">查詢單張票券詳細資訊</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/v1/frb/members/{member_id}/tickets</span>
+                </div>
+                <p class="endpoint-desc">查詢玩家所有票券</p>
+                <h4>Query Parameters</h4>
+                <table>
+                    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                    <tr><td><code>status</code></td><td><span class="field-type">string</span></td><td>篩選狀態 <span class="optional">Optional</span></td></tr>
+                    <tr><td><code>limit</code></td><td><span class="field-type">int</span></td><td>每頁筆數 <span class="optional">Optional</span></td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- FRB Service API -->
+        <section id="spec-frb-api">
+            <h2>⚙️ FRB Service API (Internal)</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">FRB Service 內部 API，供 Platform API 轉發呼叫。</p>
+
+            <div class="note">
+                <div class="note-title">💡 Note</div>
+                FRB Service 收到請求後，會直接寫入 OceanBase 並透過 Redis Pub/Sub 通知 GameServer。
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/internal/frb/tickets</span>
+                </div>
+                <p class="endpoint-desc">建立票券 (Internal Call)</p>
+                
+                <h4>Request Body</h4>
+<pre><code>{
+  <span class="property">"operator_id"</span>: <span class="string">"op_001"</span>,
+  <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,
+  <span class="property">"game_id"</span>: <span class="string">"wild_bounty"</span>,
+  <span class="property">"currency"</span>: <span class="string">"USD"</span>,
+  <span class="property">"free_rounds"</span>: <span class="number">10</span>,
+  <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,
+  <span class="property">"max_payout_cents"</span>: <span class="number">50000</span>,
+  <span class="property">"expires_at"</span>: <span class="string">"2026-01-20T00:00:00Z"</span>,
+  <span class="property">"source"</span>: <span class="string">"api"</span>,               <span class="comment">// "api" | "threshold"</span>
+  <span class="property">"campaign_id"</span>: <span class="keyword">null</span>,             <span class="comment">// 門檻模式才有</span>
+  <span class="property">"level"</span>: <span class="keyword">null</span>,                    <span class="comment">// 門檻模式才有</span>
+  <span class="property">"reason"</span>: <span class="string">"VIP Compensation"</span>
+}</code></pre>
+
+                <h4>Internal Flow</h4>
+                <ol style="color: #94a3b8; padding-left: 20px; font-size: 14px;">
+                    <li>驗證 member_id 存在</li>
+                    <li>驗證 game_id 有效</li>
+                    <li>產生 ticket_id (UUID)</li>
+                    <li>寫入 OceanBase <code>free_round_bonus_ticket</code></li>
+                    <li>寫入 Redis <code>frb:ticket:{id}</code></li>
+                    <li>更新 Redis <code>frb:player:{op}:{member}:tickets</code></li>
+                    <li><code>PUBLISH frb:ticket:created</code></li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Back Office API -->
+        <section id="spec-backoffice-api">
+            <h2>🏢 Back Office API (Campaign Management)</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">後台建立門檻模式活動，設定多層級門檻。</p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/api/backoffice/campaigns</span>
+                </div>
+                <p class="endpoint-desc">建立 FRB 活動 (含多層級門檻)</p>
+                
+                <h4>Request Body</h4>
+<pre><code>{
+  <span class="property">"name"</span>: <span class="string">"Spring Festival 2026"</span>,
+  <span class="property">"operator_id"</span>: <span class="string">"op_001"</span>,
+  <span class="property">"game_ids"</span>: [<span class="string">"wild_bounty"</span>, <span class="string">"fortune_tiger"</span>],
+  <span class="property">"start_at"</span>: <span class="string">"2026-01-20T00:00:00Z"</span>,
+  <span class="property">"end_at"</span>: <span class="string">"2026-02-20T00:00:00Z"</span>,
+  <span class="property">"levels"</span>: [
+    {
+      <span class="property">"level"</span>: <span class="number">1</span>,
+      <span class="property">"currency"</span>: <span class="string">"USD"</span>,
+      <span class="property">"threshold_cents"</span>: <span class="number">10000</span>,         <span class="comment">// 下注 $100 達標</span>
+      <span class="property">"free_rounds"</span>: <span class="number">5</span>,
+      <span class="property">"bet_rate_cents"</span>: <span class="number">50</span>,
+      <span class="property">"max_payout_cents"</span>: <span class="number">25000</span>,
+      <span class="property">"ticket_count_limit"</span>: <span class="number">1000</span>,        <span class="comment">// 最多發 1000 張</span>
+      <span class="property">"ticket_validity_days"</span>: <span class="number">7</span>
+    },
+    {
+      <span class="property">"level"</span>: <span class="number">2</span>,
+      <span class="property">"currency"</span>: <span class="string">"USD"</span>,
+      <span class="property">"threshold_cents"</span>: <span class="number">50000</span>,         <span class="comment">// 下注 $500 達標</span>
+      <span class="property">"free_rounds"</span>: <span class="number">10</span>,
+      <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,
+      <span class="property">"max_payout_cents"</span>: <span class="number">100000</span>,
+      <span class="property">"ticket_count_limit"</span>: <span class="number">500</span>,
+      <span class="property">"ticket_validity_days"</span>: <span class="number">7</span>
+    },
+    {
+      <span class="property">"level"</span>: <span class="number">3</span>,
+      <span class="property">"currency"</span>: <span class="string">"USD"</span>,
+      <span class="property">"threshold_cents"</span>: <span class="number">100000</span>,        <span class="comment">// 下注 $1000 達標</span>
+      <span class="property">"free_rounds"</span>: <span class="number">20</span>,
+      <span class="property">"bet_rate_cents"</span>: <span class="number">200</span>,
+      <span class="property">"max_payout_cents"</span>: <span class="number">500000</span>,
+      <span class="property">"ticket_count_limit"</span>: <span class="number">100</span>,
+      <span class="property">"ticket_validity_days"</span>: <span class="number">14</span>
+    }
+  ]
+}</code></pre>
+
+                <h4>Response - Success (201)</h4>
+<pre><code>{
+  <span class="property">"success"</span>: <span class="keyword">true</span>,
+  <span class="property">"data"</span>: {
+    <span class="property">"campaign_id"</span>: <span class="number">12345</span>,
+    <span class="property">"name"</span>: <span class="string">"Spring Festival 2026"</span>,
+    <span class="property">"status"</span>: <span class="string">"scheduled"</span>,
+    <span class="property">"levels_count"</span>: <span class="number">3</span>,
+    <span class="property">"max_cost_cents"</span>: <span class="number">125000000</span>       <span class="comment">// 預估最大成本</span>
+  }
+}</code></pre>
+
+                <div class="note warning">
+                    <div class="note-title">⚠️ 成本計算公式</div>
+                    <code>max_cost = SUM(ticket_count_limit[i] * max_payout_cents[i])</code>
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/backoffice/campaigns/{campaign_id}</span>
+                </div>
+                <p class="endpoint-desc">查詢活動詳情與各層級設定</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-put">PUT</span>
+                    <span class="endpoint-path">/api/backoffice/campaigns/{campaign_id}</span>
+                </div>
+                <p class="endpoint-desc">更新活動設定 (僅限活動開始前)</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/api/backoffice/campaigns/{campaign_id}/stats</span>
+                </div>
+                <p class="endpoint-desc">查詢活動統計 (已發券數、已使用、成本等)</p>
+                
+                <h4>Response</h4>
+<pre><code>{
+  <span class="property">"campaign_id"</span>: <span class="number">12345</span>,
+  <span class="property">"levels"</span>: [
+    {
+      <span class="property">"level"</span>: <span class="number">1</span>,
+      <span class="property">"ticket_count_limit"</span>: <span class="number">1000</span>,
+      <span class="property">"ticket_count_issued"</span>: <span class="number">523</span>,
+      <span class="property">"ticket_count_used"</span>: <span class="number">412</span>,
+      <span class="property">"total_payout_cents"</span>: <span class="number">8234500</span>
+    }
+  ],
+  <span class="property">"total_cost_cents"</span>: <span class="number">15678900</span>
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- MySQL Schema -->
+        <section id="spec-mysql">
+            <h2>🗄️ MySQL Schema</h2>
+            <h3>campaign_frb_level</h3>
+<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">campaign_frb_level</span> (
+    <span class="property">id</span>                    <span class="type">INT</span> <span class="keyword">PRIMARY KEY AUTO_INCREMENT</span>,
+    <span class="property">campaign_id</span>           <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">level</span>                 <span class="type">TINYINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">currency</span>              <span class="type">VARCHAR(10)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">threshold_cents</span>       <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">free_rounds</span>           <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">bet_rate_cents</span>        <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">max_payout_cents</span>      <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">ticket_count_limit</span>    <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
+    <span class="property">ticket_count_issued</span>   <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
+    <span class="property">ticket_validity_days</span>  <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">7</span>,
+    
+    <span class="keyword">UNIQUE KEY</span> uk_campaign_level_currency (campaign_id, level, currency)
+);</code></pre>
+        </section>
+
+        <!-- OceanBase Schema -->
+        <section id="spec-oceanbase">
+            <h2>🗃️ OceanBase Schema</h2>
+            <h3>free_round_bonus_ticket</h3>
+<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">free_round_bonus_ticket</span> (
+    <span class="property">id</span>                      <span class="type">VARCHAR(36)</span> <span class="keyword">PRIMARY KEY</span>,
+    <span class="property">operator_id</span>             <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">member_id</span>               <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">game_id</span>                 <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">currency</span>                <span class="type">VARCHAR(10)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">free_rounds</span>             <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">bet_rate_cents</span>          <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">max_payout_cents</span>        <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">rounds_played</span>           <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
+    <span class="property">accumulated_payout_cents</span> <span class="type">BIGINT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
+    <span class="property">status</span>                  <span class="type">VARCHAR(20)</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="string">'pending'</span>,
+    <span class="property">source</span>                  <span class="type">VARCHAR(20)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">campaign_id</span>             <span class="type">INT</span> <span class="keyword">NULL</span>,
+    <span class="property">level</span>                   <span class="type">TINYINT</span> <span class="keyword">NULL</span>,
+    <span class="property">expires_at</span>              <span class="type">DATETIME</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">created_at</span>              <span class="type">DATETIME</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP</span>,
+    
+    <span class="keyword">INDEX</span> idx_operator_member (operator_id, member_id),
+    <span class="keyword">INDEX</span> idx_status_expires (status, expires_at)
+);</code></pre>
+
+            <h3>free_round_bonus_accounting</h3>
+<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">free_round_bonus_accounting</span> (
+    <span class="property">id</span>                  <span class="type">BIGINT</span> <span class="keyword">PRIMARY KEY AUTO_INCREMENT</span>,
+    <span class="property">ticket_id</span>           <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">round_number</span>        <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">spin_id</span>             <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">raw_win_cents</span>       <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">actual_payout_cents</span> <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">accumulated_cents</span>   <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">created_at</span>          <span class="type">DATETIME</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP</span>,
+    
+    <span class="keyword">UNIQUE KEY</span> uk_ticket_round (ticket_id, round_number)
+);</code></pre>
+        </section>
+
+        <!-- Redis -->
+        <section id="spec-redis">
+            <h2>⚡ Redis Structure</h2>
+            <h3>Key Patterns</h3>
+            <table>
+                <tr><th>Key Pattern</th><th>Type</th><th>Description</th></tr>
+                <tr><td><code>frb:ticket:{ticket_id}</code></td><td>HASH</td><td>票券即時狀態</td></tr>
+                <tr><td><code>frb:player:{op}:{member}:tickets</code></td><td>SET</td><td>玩家票券清單</td></tr>
+                <tr><td><code>frb:player:{op}:{member}:totalBet</code></td><td>STRING</td><td>累計下注 (門檻模式)</td></tr>
+                <tr><td><code>frb:player:{op}:{member}:level</code></td><td>STRING</td><td>玩家當前層級</td></tr>
+            </table>
+        </section>
+
+        <!-- Pub/Sub -->
+        <section id="spec-pubsub">
+            <h2>📡 Redis Pub/Sub Events</h2>
+            
+            <div class="pubsub-channel">
+                <div class="channel-name">📤 frb:ticket:created</div>
+                <p style="color: #fecaca; font-size: 13px; margin-bottom: 12px;">Publisher: FRB Service | Subscriber: GameServer</p>
+<pre style="background: #450a0a; border-color: #7f1d1d;"><code>{
+  <span class="property">"event"</span>: <span class="string">"ticket:created"</span>,
+  <span class="property">"ticket_id"</span>: <span class="string">"frb_ticket_abc123"</span>,
+  <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,
+  <span class="property">"game_id"</span>: <span class="string">"wild_bounty"</span>,
+  <span class="property">"free_rounds"</span>: <span class="number">10</span>,
+  <span class="property">"max_payout_cents"</span>: <span class="number">50000</span>
+}</code></pre>
+            </div>
+
+            <div class="pubsub-channel" style="background: linear-gradient(135deg, #14532d 0%, #166534 100%);">
+                <div class="channel-name" style="color: #86efac;">📤 frb:ticket:completed</div>
+                <p style="color: #bbf7d0; font-size: 13px; margin-bottom: 12px;">Publisher: GameServer | Subscriber: FRB Service</p>
+<pre style="background: #052e16; border-color: #166534;"><code>{
+  <span class="property">"event"</span>: <span class="string">"ticket:completed"</span>,
+  <span class="property">"ticket_id"</span>: <span class="string">"frb_ticket_abc123"</span>,
+  <span class="property">"status"</span>: <span class="string">"completed"</span>,
+  <span class="property">"rounds_played"</span>: <span class="number">10</span>,
+  <span class="property">"total_payout_cents"</span>: <span class="number">35000</span>
+}</code></pre>
+            </div>
+        </section>
+    </div>
+
+    <!-- ==================== Q&A TAB ==================== -->
+    <div id="qa" class="tab-content">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <h2 style="border: none; display: block; font-size: 24px;">Technical Q&A</h2>
+            <p style="color: #94a3b8;">技術討論議題與解決方案 | Meeting: 2026/01/09</p>
+        </div>
+
+        <!-- Summary - Moved to top -->
+        <section style="margin-bottom: 32px;">
+            <h2>📋 決策摘要</h2>
+            <table>
+                <tr><th>議題</th><th>決策</th><th>狀態</th></tr>
+                <tr>
+                    <td>Q1: Max Payout 計算時機</td>
+                    <td>每次 Spin 即時計算，立即派發獎金</td>
+                    <td><span class="status status-completed">✅ Confirmed</span></td>
+                </tr>
+                <tr>
+                    <td>Q1-1: Cap 達標後剩餘 Spin</td>
+                    <td>剩餘 Spin 不執行，Ticket 直接 completed</td>
+                    <td><span class="status status-completed">✅ Confirmed</span></td>
+                </tr>
+                <tr>
+                    <td>Q2: Accounting 記錄方式</td>
+                    <td>每次 Spin 即時派發，無需等 Ticket 結束結算</td>
+                    <td><span class="status status-completed">✅ Confirmed</span></td>
+                </tr>
+                <tr style="background: rgba(251, 191, 36, 0.1);">
+                    <td>Q3: 活動成本控制</td>
+                    <td>待確認：Per-Ticket Max Payout × Ticket 數量限制</td>
+                    <td><span class="status status-pending">⏳ Pending</span></td>
+                </tr>
+                <tr style="background: rgba(251, 191, 36, 0.1);">
+                    <td>Q3-1: 活動結束後票券可用性</td>
+                    <td>待 Q3 確認後討論</td>
+                    <td><span class="status status-pending">⏳ Pending</span></td>
+                </tr>
+                <tr>
+                    <td>Q4: Ticket 過期處理</td>
+                    <td>因即時派發，過期時無需金額調整</td>
+                    <td><span class="status status-completed">✅ Resolved</span></td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Confirmed Decisions -->
+        <div class="decisions">
+            <h2>✅ 已確認決策</h2>
+            <ul class="decision-list">
+                <li>
+                    <span class="decision-number">1</span>
+                    <span>相同活動的門檻，會適用該活動的<strong>所有營運商</strong>，不會 by 營運商不同</span>
+                </li>
+                <li>
+                    <span class="decision-number">2</span>
+                    <span>為控制成本，<strong>Max Payout 為必填</strong>欄位</span>
+                </li>
+                <li>
+                    <span class="decision-number">3</span>
+                    <span>需加入 <strong>Ticket 有效日</strong>，避免活動結束玩家無法使用 Ticket 導致體驗不好</span>
+                </li>
+                <li>
+                    <span class="decision-number">4</span>
+                    <span>若 Ticket 在到期前未使用完畢，到期時會<strong>統一結算已使用 Round 的 Payout</strong> 派給玩家</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Q1 -->
+        <div class="qa-card" style="border: 2px solid #10b981;">
+            <div class="question" style="background: linear-gradient(135deg, #14532d 0%, #166534 100%);">
+                <span class="q-badge" style="background: #10b981;">Q1</span>
+                <span>GS 目前每一個 spin 會結算並異動 wallet，要如何以 ticket 為單位判斷 max payout 並異動 wallet？</span>
+                <span style="margin-left: auto; background: #10b981; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">✅ REVIEWED</span>
+            </div>
+            <div class="answer">
+                <div class="answer-label">💡 結論</div>
+                <p>採用<strong>即時 Cap 計算</strong>：每次 Spin 時即時計算並套用 Max Payout 上限，立即派發獎金。</p>
+                
+                <div class="comparison">
+                    <div class="comparison-box before">
+                        <h4>❌ 現有流程 (無 Cap)</h4>
+<pre><code>Spin 1: Win 10 → Wallet +10
+Spin 2: Win 25 → Wallet +25
+Total: Wallet +35</code></pre>
+                    </div>
+                    <div class="comparison-box after">
+                        <h4>✅ 新流程 (即時 Cap)</h4>
+<pre><code>Max Payout = 30
+Spin 1: Win 10 → Wallet +10 (累計: 10)
+Spin 2: Win 25 → Wallet +20 (Cap!)
+Total: Wallet +30</code></pre>
+                    </div>
+                </div>
+
+                <div class="solution recommended">
+                    <div class="solution-header">
+                        <span class="solution-title">Cap 計算公式</span>
+                        <span class="badge-recommended">CONFIRMED</span>
+                    </div>
+<pre><code>actual_payout = min(raw_win, max(<span class="number">0</span>, max_payout - accumulated_payout))</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q1-1: Reviewed -->
+        <div class="qa-card" style="border: 2px solid #10b981;">
+            <div class="question" style="background: linear-gradient(135deg, #14532d 0%, #166534 100%);">
+                <span class="q-badge" style="background: #10b981;">Q1-1</span>
+                <span>若採用即時 Cap 計算，達到 Max Payout 後剩餘的 Spin 要如何處理？</span>
+                <span style="margin-left: auto; background: #10b981; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">✅ REVIEWED</span>
+            </div>
+            <div class="answer">
+                <div class="answer-label">💡 結論</div>
+                
+                <div class="solution recommended">
+                    <div class="solution-header">
+                        <span class="solution-title">Cap 達標後立即結束 Ticket</span>
+                        <span class="badge-recommended">CONFIRMED</span>
+                    </div>
+                    <p>當玩家達到 Max Payout 時，<strong>剩餘的 Spin 不再執行</strong>，Ticket 直接標記為 completed。</p>
+                </div>
+                
+                <table style="margin-top: 16px;">
+                    <tr><th>Spin</th><th>Raw Win</th><th>Accumulated</th><th>Actual Payout</th><th>結果</th></tr>
+                    <tr><td>1</td><td>200</td><td>200</td><td style="color: #86efac;">200</td><td></td></tr>
+                    <tr><td>2</td><td>350</td><td>500</td><td style="color: #86efac;">300 (Cap!)</td><td style="color: #f472b6; font-weight: 600;">→ early_completed</td></tr>
+                    <tr style="color: #64748b; text-decoration: line-through;">
+                        <td>3</td><td>-</td><td>-</td><td>-</td><td rowspan="3">不執行</td>
+                    </tr>
+                    <tr style="color: #64748b; text-decoration: line-through;">
+                        <td>4</td><td>-</td><td>-</td><td>-</td>
+                    </tr>
+                    <tr style="color: #64748b; text-decoration: line-through;">
+                        <td>5</td><td>-</td><td>-</td><td>-</td>
+                    </tr>
+                </table>
+
+                <div class="note" style="margin-top: 16px;">
+                    <div class="note-title">✨ 優點</div>
+                    <ul style="margin-left: 16px; color: #94a3b8; font-size: 13px;">
+                        <li>避免 0 派彩的尷尬體驗</li>
+                        <li>避免 Feature Game 觸發但無獎金的困惑</li>
+                        <li>玩家清楚知道已獲得最大獎金</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="qa-card" style="border: 2px solid #10b981;">
+            <div class="question" style="background: linear-gradient(135deg, #14532d 0%, #166534 100%);">
+                <span class="q-badge" style="background: #10b981;">Q2</span>
+                <span>要如何將一張 ticket 的 total win 分派給多個 round 的 accounting？</span>
+                <span style="margin-left: auto; background: #10b981; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">✅ REVIEWED</span>
+            </div>
+            <div class="answer">
+                <div class="answer-label">💡 結論</div>
+                
+                <div class="solution recommended">
+                    <div class="solution-header">
+                        <span class="solution-title">每次 Spin 即時派發獎金</span>
+                        <span class="badge-recommended">CONFIRMED</span>
+                    </div>
+                    <p>因為採用即時 Cap 計算，<strong>每次 Spin 就立即派發獎金</strong>，不需要等整個 Ticket 結束才結算。</p>
+                </div>
+
+                <table style="margin-top: 16px;">
+                    <tr><th>Round</th><th>raw_win</th><th>actual_payout</th><th>Wallet 異動</th><th>bet_type</th></tr>
+                    <tr><td>1</td><td>10</td><td>10</td><td style="color: #86efac;">+10 (即時)</td><td><code>4096</code></td></tr>
+                    <tr><td>2</td><td>25</td><td>20</td><td style="color: #86efac;">+20 (即時)</td><td><code>4096</code></td></tr>
+                </table>
+
+                <div class="note" style="margin-top: 16px;">
+                    <div class="note-title">✨ 優點</div>
+                    <ul style="margin-left: 16px; color: #94a3b8; font-size: 13px;">
+                        <li>無需事後沖銷或調整</li>
+                        <li>Accounting 記錄清晰（raw_win vs actual_payout）</li>
+                        <li>以 <code>bet_type = 4096</code> 區分 FRB 類型</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="qa-card" style="border: 2px solid #f59e0b;">
+            <div class="question" style="background: linear-gradient(135deg, #78350f 0%, #92400e 100%);">
+                <span class="q-badge" style="background: #f59e0b;">Q3</span>
+                <span>新增了 Ticket Max Payout 並限制 Ticket 數量，是否還需要保留整體活動成本上限？</span>
+                <span style="margin-left: auto; background: #f59e0b; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">⏳ PENDING REVIEW</span>
+            </div>
+            <div class="answer" style="background: #1c1917;">
+                <div class="answer-label" style="color: #f59e0b;">⚠️ 待與技術長 Review</div>
+                
+                <div class="solution" style="border-left-color: #f59e0b;">
+                    <div class="solution-header">
+                        <span class="solution-title">建議：移除整體活動成本上限</span>
+                        <span class="badge-alternative">PROPOSED</span>
+                    </div>
+                    <p>有了 Per-Ticket Max Payout + Ticket 數量限制，整體成本已可精確計算：</p>
+<pre><code><span class="comment">// 活動最大成本 = 各層級成本加總</span>
+max_cost = Σ (ticket_count_limit[i] × max_payout_cents[i])
+
+Level 1: <span class="number">1000</span> tickets × $<span class="number">250</span> = $<span class="number">250,000</span>
+Level 2: <span class="number">500</span> tickets × $<span class="number">1000</span> = $<span class="number">500,000</span>
+Level 3: <span class="number">100</span> tickets × $<span class="number">5000</span> = $<span class="number">500,000</span>
+───────────────────────────────────────
+Total Max Cost: $<span class="number">1,250,000</span></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q3-1: Pending Review (depends on Q3) -->
+        <div class="qa-card" style="border: 2px solid #f59e0b;">
+            <div class="question" style="background: linear-gradient(135deg, #78350f 0%, #92400e 100%);">
+                <span class="q-badge" style="background: #f59e0b;">Q3-1</span>
+                <span>活動結束後，玩家手上的票券還可以使用嗎？</span>
+                <span style="margin-left: auto; background: #f59e0b; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">⏳ 待 Q3 確認</span>
+            </div>
+            <div class="answer" style="background: #1c1917;">
+                <div class="answer-label" style="color: #f59e0b;">⚠️ 待與技術長 Review</div>
+                
+                <h4 style="color: #fbbf24; margin-top: 16px;">問題情境</h4>
+                <p style="margin-bottom: 16px;">活動可能因以下原因結束：</p>
+                <ul style="color: #fef3c7; padding-left: 20px; font-size: 14px; margin-bottom: 16px;">
+                    <li>活動時間到期（例：活動到 1/10 結束）</li>
+                    <li>票券發放數量達上限（ticket_count_limit）</li>
+                    <li>手動提前結束活動</li>
+                </ul>
+                
+                <table>
+                    <tr><th>情境</th><th>問題</th></tr>
+                    <tr>
+                        <td>活動 1/10 結束，玩家 1/9 獲得票券</td>
+                        <td style="color: #fbbf24;">玩家 1/11 登入，票券還能用嗎？</td>
+                    </tr>
+                    <tr>
+                        <td>票券發完導致活動提前結束</td>
+                        <td style="color: #fbbf24;">最後一批拿到票券的玩家還能用嗎？</td>
+                    </tr>
+                </table>
+
+                <h4 style="color: #fbbf24; margin-top: 24px;">關鍵問題</h4>
+                <ul style="color: #fef3c7; padding-left: 20px; font-size: 14px;">
+                    <li style="margin-bottom: 8px;"><strong>Ticket 有效期 vs 活動期間</strong>：兩者是否獨立？Ticket expires_at 是否應該與活動 end_at 脫鉤？</li>
+                    <li style="margin-bottom: 8px;"><strong>玩家體驗</strong>：如果活動結束就不能用，玩家可能感覺被「騙」</li>
+                    <li style="margin-bottom: 8px;"><strong>成本控制</strong>：允許活動結束後繼續使用，成本是否仍可控？（已發券數量固定）</li>
+                </ul>
+
+                <h4 style="color: #fbbf24; margin-top: 24px;">可能方案 (待討論)</h4>
+                <div class="solutions">
+                    <div class="solution" style="border-left-color: #f59e0b;">
+                        <div class="solution-header">
+                            <span class="solution-title">方案 A：Ticket 有效期獨立於活動</span>
+                            <span class="badge-alternative">OPTION</span>
+                        </div>
+                        <p>活動結束只影響「發券」，已發出的票券依照 expires_at 決定是否可用</p>
+<pre><code><span class="comment">// 活動 1/10 結束，票券 validity_days = 7</span>
+玩家 1/8 獲得票券 → expires_at = 1/15
+玩家 1/11 登入 → <span class="string">可以使用</span> (未過期)</code></pre>
+                        <ul style="color: #94a3b8; font-size: 12px; margin-top: 8px; padding-left: 16px;">
+                            <li>✅ 玩家體驗好，拿到的票券保證能用</li>
+                            <li>✅ 成本仍可控（已發券數量 × max_payout）</li>
+                            <li>❌ 活動「結束」後仍有成本支出</li>
+                        </ul>
+                    </div>
+                    <div class="solution" style="border-left-color: #f59e0b;">
+                        <div class="solution-header">
+                            <span class="solution-title">方案 B：活動結束 = 所有票券失效</span>
+                            <span class="badge-alternative">OPTION</span>
+                        </div>
+                        <p>活動結束時，強制將所有未完成票券標記為 expired</p>
+                        <ul style="color: #94a3b8; font-size: 12px; margin-top: 8px; padding-left: 16px;">
+                            <li>✅ 成本完全可控，活動結束即止損</li>
+                            <li>❌ 玩家體驗差，剛拿到的票券可能立刻失效</li>
+                            <li>❌ 需要額外的批次處理邏輯</li>
+                        </ul>
+                    </div>
+                    <div class="solution" style="border-left-color: #f59e0b;">
+                        <div class="solution-header">
+                            <span class="solution-title">方案 C：活動結束後給予寬限期</span>
+                            <span class="badge-alternative">OPTION</span>
+                        </div>
+                        <p>活動結束後，給予固定天數（如 3 天）讓玩家使用完票券</p>
+                        <ul style="color: #94a3b8; font-size: 12px; margin-top: 8px; padding-left: 16px;">
+                            <li>✅ 平衡玩家體驗與成本控制</li>
+                            <li>❌ 增加活動設定複雜度</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="note warning" style="margin-top: 20px;">
+                    <div class="note-title">📅 待 Review</div>
+                    <p>此議題需與技術長討論確認，涉及：</p>
+                    <ul style="margin-left: 16px; margin-top: 8px; color: #fef3c7;">
+                        <li>產品定義：活動結束的語意是什麼？</li>
+                        <li>財務考量：活動結束後的成本如何歸屬？</li>
+                        <li>技術實作：Expiration Job 是否需要感知活動狀態？</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="qa-card" style="border: 2px solid #10b981;">
+            <div class="question" style="background: linear-gradient(135deg, #14532d 0%, #166534 100%);">
+                <span class="q-badge" style="background: #10b981;">Q4</span>
+                <span>Ticket 過期時如何處理已使用的 Round？</span>
+                <span style="margin-left: auto; background: #10b981; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">✅ REVIEWED</span>
+            </div>
+            <div class="answer">
+                <div class="answer-label">💡 結論</div>
+                
+                <div class="solution recommended">
+                    <div class="solution-header">
+                        <span class="solution-title">此問題已不需討論</span>
+                        <span class="badge-recommended">RESOLVED</span>
+                    </div>
+                    <p>因為成本計算方式為 <strong>Tickets × Max Payout</strong>，且每次 Spin 即時派發獎金，過期處理變得非常簡單。</p>
+                </div>
+                
+                <table style="margin-top: 16px;">
+                    <tr><th>Ticket 狀態</th><th>過期處理</th><th>玩家獲得</th></tr>
+                    <tr><td><code>pending</code></td><td>直接標記 expired</td><td>$0</td></tr>
+                    <tr><td><code>inuse</code></td><td>停止新 Spin，保留已派彩</td><td>accumulated_payout (已即時派發)</td></tr>
+                    <tr><td><code>completed</code></td><td>不受影響</td><td>total_payout</td></tr>
+                </table>
+
+                <div class="note" style="margin-top: 16px;">
+                    <div class="note-title">✨ 關鍵設計</div>
+                    <p>每次 Spin 都即時套用 Cap 並派彩給玩家，<strong>過期時無需任何金額調整</strong>，只需停止接受新的 Spin 即可。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <p>FRB 2.0 Documentation | Last Updated: 2026-01-13</p>
+    </footer>
+
+    <script>
+        // Tab switching logic
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active from all tabs
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active to clicked tab
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
