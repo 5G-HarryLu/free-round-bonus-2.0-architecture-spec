@@ -895,20 +895,41 @@
 
         <!-- Platform API -->
         <section id="spec-platform-api">
-            <h2>🌐 Platform API</h2>
-            <p style="color: #94a3b8; margin-bottom: 24px;">Operator 透過 Platform API 送券給特定玩家</p>
+            <h2>🌐 PlatformApi - FRB API</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">Base URL: <code>/frb</code> | PlatformApi 提供給 Operator 的 FRB 票券管理接口</p>
 
+            <div class="note">
+                <div class="note-title">🔐 驗證機制</div>
+                <ul style="margin-left: 20px; color: #94a3b8;">
+                    <li><strong>Header 驗證</strong>: 需提供 <code>X-Operator-Id</code></li>
+                    <li><strong>IP 白名單</strong>: 系統會驗證來源 IP 是否在 Operator 的白名單中</li>
+                    <li><strong>Type</strong>: <code>IpWhiteTypeEnum.Funds</code></li>
+                </ul>
+            </div>
+
+            <!-- FRB Create Ticket -->
             <div class="endpoint">
                 <div class="endpoint-header">
                     <span class="method method-post">POST</span>
-                    <span class="endpoint-path">/api/v1/frb/tickets</span>
+                    <span class="endpoint-path">/frb/tickets</span>
                 </div>
-                <p class="endpoint-desc">發送單張 Free Round Bonus 給指定玩家</p>
+                <p class="endpoint-desc">建立 FRB 票券 (Flow B: 直接送券) - Operator 呼叫此接口發放票券給指定玩家</p>
                 
-                <h4>Request Body</h4>
+                <h4>Request Headers</h4>
+                <table style="margin: 12px 0;">
+                    <tr><th>Header</th><th>類型</th><th>必填</th><th>說明</th></tr>
+                    <tr>
+                        <td><code>X-Operator-Id</code></td>
+                        <td>string</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>營運商 ID，用於驗證與 IP 白名單檢查</td>
+                    </tr>
+                </table>
+
+                <h4>Request Body: <code>ReqCreateTicket</code></h4>
 <pre><code>{
   <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,
-  <span class="property">"game_id"</span>: <span class="string">"wild_bounty"</span>,
+  <span class="property">"game_code"</span>: <span class="string">"wild_bounty"</span>,
   <span class="property">"currency"</span>: <span class="string">"USD"</span>,
   <span class="property">"free_rounds"</span>: <span class="number">10</span>,
   <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,
@@ -917,35 +938,231 @@
   <span class="property">"reason"</span>: <span class="string">"VIP Compensation"</span>
 }</code></pre>
 
-                <h4>Response (201)</h4>
+                <h4>Response (201 Created): <code>RespBase&lt;RespCreateTicket&gt;</code></h4>
 <pre><code>{
-  <span class="property">"success"</span>: <span class="keyword">true</span>,
-  <span class="property">"data"</span>: {
-    <span class="property">"ticket_id"</span>: <span class="string">"frb_ticket_abc123"</span>,
-    <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,
+  <span class="property">"code"</span>: <span class="number">0</span>,
+  <span class="property">"message"</span>: <span class="string">"Success"</span>,
+  <span class="property">"result"</span>: {
+    <span class="property">"ticket_id"</span>: <span class="string">"frb_abc123def456"</span>,
+    <span class="property">"campaign_id"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
     <span class="property">"status"</span>: <span class="string">"pending"</span>,
-    <span class="property">"expires_at"</span>: <span class="string">"2026-01-20T00:00:00Z"</span>
+    <span class="property">"expires_at"</span>: <span class="string">"2026-01-27T00:00:00Z"</span>
+  }
+}</code></pre>
+
+                <h4>錯誤回應</h4>
+                
+                <h5>400 Bad Request - X-Operator-Id 缺失</h5>
+<pre><code>{
+  <span class="property">"code"</span>: <span class="number">9999</span>,
+  <span class="property">"message"</span>: <span class="string">"Error"</span>
+}</code></pre>
+
+                <h5>403 Forbidden - IP 白名單驗證失敗</h5>
+<pre><code>{
+  <span class="property">"code"</span>: <span class="number">1001</span>,  <span class="comment">// 依實際 ErrorCodeEnum 定義</span>
+  <span class="property">"message"</span>: <span class="string">"IP not in whitelist"</span>
+}</code></pre>
+
+                <h5>502 Bad Gateway - FRB Campaign Service 錯誤</h5>
+<pre><code>{
+  <span class="property">"code"</span>: <span class="number">9999</span>,
+  <span class="property">"message"</span>: <span class="string">"FRB Campaign service error"</span>
+}</code></pre>
+
+                <h5>500 Internal Server Error - 系統錯誤</h5>
+<pre><code>{
+  <span class="property">"code"</span>: <span class="number">9999</span>,
+  <span class="property">"message"</span>: <span class="string">"Internal server error"</span>
+}</code></pre>
+
+                <h4>處理流程</h4>
+                <ol style="color: #94a3b8; padding-left: 20px; font-size: 14px; margin-top: 12px;">
+                    <li>驗證 <code>X-Operator-Id</code> Header 是否存在</li>
+                    <li>檢查來源 IP 是否在 Operator 的白名單中 (Type: Funds)</li>
+                    <li>轉發請求至 FRB Campaign Service <code>POST /api/tickets</code></li>
+                    <li>接收 Campaign Service 回應並返回給 Operator</li>
+                    <li>記錄操作日誌至 AWS</li>
+                </ol>
+
+                <div class="note warning" style="margin-top: 16px;">
+                    <div class="note-title">⚠️ 重要說明</div>
+                    <ul style="margin-left: 20px; color: #fef3c7;">
+                        <li><strong>必須</strong>在 Request Header 中提供 <code>X-Operator-Id</code></li>
+                        <li>來源 IP <strong>必須</strong>在 Operator 的 IP 白名單中</li>
+                        <li>PlatformApi 會轉發請求至 FRB Campaign Service</li>
+                        <li>所有錯誤都會記錄至 AWS CloudWatch</li>
+                        <li>成功回應使用 HTTP 201 Created</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Campaign API -->
+        <section id="spec-platform-api-campaign">
+            <h2>🌐 PlatformApi V2 - Campaign API</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">Base URL: <code>/v2/campaign</code> | 負責處理與 FRB Campaign Service 的整合</p>
+
+            <!-- 1.1 Get Total Bet Amount -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/v2/campaign/get_total_bet_amount</span>
+                </div>
+                <p class="endpoint-desc">取得特定會員在特定活動中的總下注金額。此接口串接至 FRB Campaign Service。</p>
+                
+                <h4>Request Body</h4>
+<pre><code>{
+  <span class="property">"campaign_id"</span>: <span class="string">"string"</span>,
+  <span class="property">"operator_id"</span>: <span class="string">"string"</span>,
+  <span class="property">"member_id"</span>: <span class="string">"string"</span>
+}</code></pre>
+
+                <h4>Response</h4>
+<pre><code>{
+  <span class="property">"code"</span>: <span class="number">0</span>,
+  <span class="property">"message"</span>: <span class="string">"Success"</span>,
+  <span class="property">"result"</span>: {
+    <span class="property">"campaign_id"</span>: <span class="string">"string"</span>,
+    <span class="property">"total_bet_amount"</span>: <span class="number">0.0</span>  <span class="comment">// decimal (非 Cent)</span>
   }
 }</code></pre>
             </div>
 
+            <!-- 1.2 Get Total Payout -->
             <div class="endpoint">
                 <div class="endpoint-header">
                     <span class="method method-post">POST</span>
-                    <span class="endpoint-path">/api/v1/frb/tickets/batch</span>
+                    <span class="endpoint-path">/v2/campaign/get_total_payout</span>
                 </div>
-                <p class="endpoint-desc">批量發送 Free Round Bonus 給多位玩家</p>
+                <p class="endpoint-desc">取得特定活動的總派彩金額。此接口串接至 FRB Campaign Service。</p>
                 
                 <h4>Request Body</h4>
 <pre><code>{
-  <span class="property">"game_id"</span>: <span class="string">"wild_bounty"</span>,
-  <span class="property">"currency"</span>: <span class="string">"USD"</span>,
-  <span class="property">"free_rounds"</span>: <span class="number">10</span>,
-  <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,
-  <span class="property">"max_payout_cents"</span>: <span class="number">50000</span>,
-  <span class="property">"validity_days"</span>: <span class="number">7</span>,
-  <span class="property">"member_ids"</span>: [<span class="string">"player_001"</span>, <span class="string">"player_002"</span>, <span class="string">"player_003"</span>]
+  <span class="property">"campaign_id"</span>: <span class="string">"string"</span>
 }</code></pre>
+
+                <h4>Response</h4>
+<pre><code>{
+  <span class="property">"code"</span>: <span class="number">0</span>,
+  <span class="property">"message"</span>: <span class="string">"Success"</span>,
+  <span class="property">"result"</span>: {
+    <span class="property">"campaign_id"</span>: <span class="string">"string"</span>,
+    <span class="property">"total_payout"</span>: <span class="number">0</span>  <span class="comment">// ulong (cents)</span>
+  }
+}</code></pre>
+            </div>
+
+            <!-- 1.3 Promo Redirect -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/v2/campaign/promo</span>
+                </div>
+                <p class="endpoint-desc">活動轉址 (302 Redirect 至活動頁面)</p>
+                
+                <h4>Query Parameters</h4>
+                <table style="margin: 12px 0;">
+                    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                    <tr><td><code>campaign_id</code></td><td>string</td><td>活動編號</td></tr>
+                    <tr><td><code>operator_id</code></td><td>string</td><td>營運商編號</td></tr>
+                    <tr><td><code>member_id</code></td><td>string</td><td>會員編號</td></tr>
+                    <tr><td><code>sign</code></td><td>string</td><td>簽章驗證</td></tr>
+                </table>
+
+                <h4>Response</h4>
+<pre><code><span class="keyword">302</span> <span class="string">Redirect</span> <span class="comment">// 跳轉至活動 URL</span></code></pre>
+            </div>
+
+            <!-- 1.4 Promo Info Redirect -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="endpoint-path">/v2/campaign/promo_info</span>
+                </div>
+                <p class="endpoint-desc">活動資訊轉址 (302 Redirect 至活動資訊頁面)</p>
+                
+                <h4>Query Parameters</h4>
+                <p style="color: #94a3b8; font-size: 13px;">同 <code>/promo</code> 端點</p>
+
+                <h4>Response</h4>
+<pre><code><span class="keyword">302</span> <span class="string">Redirect</span> <span class="comment">// 跳轉至活動資訊 URL</span></code></pre>
+            </div>
+
+            <!-- Other Campaign APIs -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 24px;">
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/v2/campaign/information_list</span>
+                    </div>
+                    <p class="endpoint-desc">取得活動列表</p>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/v2/campaign/information_single</span>
+                    </div>
+                    <p class="endpoint-desc">取得單一活動資訊</p>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/v2/campaign/message_list</span>
+                    </div>
+                    <p class="endpoint-desc">取得訊息列表</p>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/v2/campaign/message_single</span>
+                    </div>
+                    <p class="endpoint-desc">取得單一訊息</p>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/v2/campaign/read</span>
+                    </div>
+                    <p class="endpoint-desc">已讀活動訊息</p>
+                </div>
+            </div>
+
+            <div class="note warning" style="margin-top: 24px;">
+                <div class="note-title">⚠️ 重要提醒</div>
+                <ul style="margin-left: 20px; color: #fef3c7;">
+                    <li>所有金額單位統一使用 <strong>Cent (分)</strong></li>
+                    <li><code>total_bet_amount</code> 為 <strong>decimal</strong> 類型 (非 Cent)</li>
+                    <li><code>promo</code> 相關端點會進行 <strong>302 跳轉</strong></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Member API -->
+        <section id="spec-platform-api-member">
+            <h2>👤 PlatformApi V2 - Member API</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">Base URL: <code>/v2/members</code></p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="endpoint-path">/v2/members/wallet/refresh</span>
+                </div>
+                <p class="endpoint-desc">通知會員錢包餘額已刷新。此接口串接至 FRB Campaign Service，用於觸發即時通知。</p>
+                
+                <h4>Request Body</h4>
+<pre><code>{
+  <span class="property">"operator_id"</span>: <span class="string">"string"</span>,
+  <span class="property">"member_id"</span>: <span class="string">"string"</span>,
+  <span class="property">"balance"</span>: <span class="number">0</span>  <span class="comment">// ulong (cents)</span>
+}</code></pre>
+
+                <h4>Response</h4>
+<pre><code><span class="keyword">200</span> <span class="string">OK</span></code></pre>
             </div>
 
             <div class="endpoint">
@@ -973,47 +1190,157 @@
 
         <!-- FRB Service API -->
         <section id="spec-frb-api">
-            <h2>⚙️ FRB Service API (Internal)</h2>
-            <p style="color: #94a3b8; margin-bottom: 24px;">FRB Service 內部 API，供 Platform API 轉發呼叫。</p>
+            <h2>⚙️ FRB Campaign Service API (Internal)</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">Base URL: <code>/api/tickets</code> | FRB Campaign Service 內部 API，供 PlatformApi 呼叫</p>
 
             <div class="note">
-                <div class="note-title">💡 Note</div>
-                FRB Service 收到請求後，會直接寫入 OceanBase 並透過 Redis Pub/Sub 通知 GameServer。
+                <div class="note-title">💡 使用情境</div>
+                <p>此 API 用於 <strong>Flow B: 直接送券</strong> 場景，Operator 透過 PlatformApi 呼叫此服務來發放票券給指定玩家。</p>
             </div>
 
+            <!-- Create Ticket -->
             <div class="endpoint">
                 <div class="endpoint-header">
                     <span class="method method-post">POST</span>
-                    <span class="endpoint-path">/internal/frb/tickets</span>
+                    <span class="endpoint-path">/api/tickets</span>
                 </div>
-                <p class="endpoint-desc">建立票券 (Internal Call)</p>
+                <p class="endpoint-desc">建立 FRB 票券 (Flow B: 直接送券)</p>
                 
-                <h4>Request Body</h4>
+                <h4>Request Body: <code>CreateTicketRequest</code></h4>
 <pre><code>{
-  <span class="property">"operator_id"</span>: <span class="string">"op_001"</span>,
-  <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,
-  <span class="property">"game_id"</span>: <span class="string">"wild_bounty"</span>,
-  <span class="property">"currency"</span>: <span class="string">"USD"</span>,
-  <span class="property">"free_rounds"</span>: <span class="number">10</span>,
-  <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,
-  <span class="property">"max_payout_cents"</span>: <span class="number">50000</span>,
-  <span class="property">"expires_at"</span>: <span class="string">"2026-01-20T00:00:00Z"</span>,
-  <span class="property">"source"</span>: <span class="string">"api"</span>,               <span class="comment">// "api" | "threshold"</span>
-  <span class="property">"campaign_id"</span>: <span class="keyword">null</span>,             <span class="comment">// 門檻模式才有</span>
-  <span class="property">"level"</span>: <span class="keyword">null</span>,                    <span class="comment">// 門檻模式才有</span>
-  <span class="property">"reason"</span>: <span class="string">"VIP Compensation"</span>
+  <span class="property">"operator"</span>: <span class="string">"OperatorA"</span>,                    <span class="comment">// 營運商名稱 (用於查詢 operator.id)</span>
+  <span class="property">"member_id"</span>: <span class="string">"player_12345"</span>,                 <span class="comment">// 玩家 ID</span>
+  <span class="property">"game"</span>: <span class="string">"WildBounty"</span>,                        <span class="comment">// 遊戲名稱 (用於查詢 game.id)</span>
+  <span class="property">"currency"</span>: <span class="string">"USD"</span>,                           <span class="comment">// 幣別</span>
+  <span class="property">"free_rounds"</span>: <span class="number">10</span>,                           <span class="comment">// 免費旋轉次數</span>
+  <span class="property">"bet_rate_cents"</span>: <span class="number">100</span>,                      <span class="comment">// 每次旋轉下注金額 (cents)</span>
+  <span class="property">"max_payout_cents"</span>: <span class="number">50000</span>,                  <span class="comment">// 最大派彩上限 (cents)</span>
+  <span class="property">"validity_days"</span>: <span class="number">7</span>,                         <span class="comment">// 票券有效天數</span>
+  <span class="property">"reason"</span>: <span class="string">"VIP Compensation"</span>               <span class="comment">// 送券原因 (選填)</span>
 }</code></pre>
 
-                <h4>Internal Flow</h4>
-                <ol style="color: #94a3b8; padding-left: 20px; font-size: 14px;">
-                    <li>驗證 member_id 存在</li>
-                    <li>驗證 game_id 有效</li>
-                    <li>產生 ticket_id (UUID)</li>
+                <h4>Response (200 OK): <code>CreateTicketResponse</code></h4>
+<pre><code>{
+  <span class="property">"ticket_id"</span>: <span class="string">"frb_abc123def456"</span>,
+  <span class="property">"campaign_id"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+  <span class="property">"status"</span>: <span class="string">"pending"</span>,
+  <span class="property">"expires_at"</span>: <span class="string">"2026-01-27T00:00:00Z"</span>
+}</code></pre>
+
+                <h4>Request 欄位說明</h4>
+                <table style="margin-top: 12px;">
+                    <tr><th>欄位</th><th>類型</th><th>必填</th><th>說明</th></tr>
+                    <tr>
+                        <td><code>operator</code></td>
+                        <td>string</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>營運商名稱，系統會查詢對應的 operator.id</td>
+                    </tr>
+                    <tr>
+                        <td><code>member_id</code></td>
+                        <td>string</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>玩家唯一識別碼</td>
+                    </tr>
+                    <tr>
+                        <td><code>game</code></td>
+                        <td>string</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>遊戲名稱，系統會查詢對應的 game.id</td>
+                    </tr>
+                    <tr>
+                        <td><code>currency</code></td>
+                        <td>string</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>幣別代碼 (例: USD, CNY, TWD)</td>
+                    </tr>
+                    <tr>
+                        <td><code>free_rounds</code></td>
+                        <td>int</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>免費旋轉次數</td>
+                    </tr>
+                    <tr>
+                        <td><code>bet_rate_cents</code></td>
+                        <td>long</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>每次旋轉的下注金額 (單位: cents)</td>
+                    </tr>
+                    <tr>
+                        <td><code>max_payout_cents</code></td>
+                        <td>long</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>單張票券的最大派彩上限 (單位: cents)</td>
+                    </tr>
+                    <tr>
+                        <td><code>validity_days</code></td>
+                        <td>int</td>
+                        <td><span style="color: #ef4444; font-weight: 600;">✓</span></td>
+                        <td>票券有效天數</td>
+                    </tr>
+                    <tr>
+                        <td><code>reason</code></td>
+                        <td>string?</td>
+                        <td><span style="color: #94a3b8;">選填</span></td>
+                        <td>送券原因 (例: VIP Compensation, Birthday Gift)</td>
+                    </tr>
+                </table>
+
+                <h4>Response 欄位說明</h4>
+                <table style="margin-top: 12px;">
+                    <tr><th>欄位</th><th>類型</th><th>說明</th></tr>
+                    <tr>
+                        <td><code>ticket_id</code></td>
+                        <td>string</td>
+                        <td>票券唯一識別碼 (UUID)</td>
+                    </tr>
+                    <tr>
+                        <td><code>campaign_id</code></td>
+                        <td>string</td>
+                        <td>關聯的活動 ID (由後端自動關聯)</td>
+                    </tr>
+                    <tr>
+                        <td><code>status</code></td>
+                        <td>string</td>
+                        <td>票券狀態，預設為 "pending"</td>
+                    </tr>
+                    <tr>
+                        <td><code>expires_at</code></td>
+                        <td>DateTimeOffset</td>
+                        <td>票券過期時間 (UTC)</td>
+                    </tr>
+                </table>
+
+                <h4>內部處理流程</h4>
+                <ol style="color: #94a3b8; padding-left: 20px; font-size: 14px; margin-top: 12px;">
+                    <li>根據 <code>operator</code> 名稱查詢 operator.id</li>
+                    <li>根據 <code>game</code> 名稱查詢 game.id</li>
+                    <li>驗證 <code>member_id</code> 存在</li>
+                    <li>產生 <code>ticket_id</code> (UUID)</li>
+                    <li>計算 <code>expires_at</code> = now + validity_days</li>
+                    <li>自動關聯或建立對應的 <code>campaign_id</code></li>
                     <li>寫入 OceanBase <code>free_round_bonus_ticket</code></li>
-                    <li>寫入 Redis <code>frb:ticket:{id}</code></li>
-                    <li>更新 Redis <code>frb:player:{op}:{member}:tickets</code></li>
-                    <li><code>PUBLISH frb:ticket:created</code></li>
+                    <li>寫入 OceanBase <code>free_round_bonus_ticket_details</code></li>
+                    <li>更新 Redis 快取 (可選)</li>
+                    <li>發送 Kafka Event: <code>ticket.created</code></li>
                 </ol>
+
+                <h4>錯誤回應 (400 Bad Request)</h4>
+<pre><code>{
+  <span class="property">"error"</span>: <span class="string">"ValidationError"</span>,
+  <span class="property">"message"</span>: <span class="string">"Invalid operator name"</span>
+}</code></pre>
+
+                <div class="note warning" style="margin-top: 16px;">
+                    <div class="note-title">⚠️ 重要說明</div>
+                    <ul style="margin-left: 20px; color: #fef3c7;">
+                        <li>Request <strong>不需要</strong>提供 <code>campaign_id</code>，由後端自動處理</li>
+                        <li>Response 會返回關聯的 <code>campaign_id</code></li>
+                        <li><code>operator</code> 和 <code>game</code> 使用名稱，系統會自動轉換為 ID</li>
+                        <li>所有金額單位統一使用 <strong>cents (分)</strong></li>
+                        <li>票券建立後狀態為 <code>pending</code>，等待玩家使用</li>
+                    </ul>
+                </div>
             </div>
         </section>
 
@@ -1131,63 +1458,153 @@
         <!-- MySQL Schema -->
         <section id="spec-mysql">
             <h2>🗄️ MySQL Schema</h2>
-            <h3>campaign_frb_level</h3>
-<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">campaign_frb_level</span> (
-    <span class="property">id</span>                    <span class="type">INT</span> <span class="keyword">PRIMARY KEY AUTO_INCREMENT</span>,
-    <span class="property">campaign_id</span>           <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">level</span>                 <span class="type">TINYINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">currency</span>              <span class="type">VARCHAR(10)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">threshold_cents</span>       <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">free_rounds</span>           <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">bet_rate_cents</span>        <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">max_payout_cents</span>      <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">ticket_count_limit</span>    <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
-    <span class="property">ticket_count_issued</span>   <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
-    <span class="property">ticket_validity_days</span>  <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">7</span>,
+            <p style="color: #94a3b8; margin-bottom: 24px;">Database: <code>five_game</code> @ <code>mysql-rds</code></p>
+
+            <h3>campaign</h3>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">儲存活動配置與元資料</p>
+<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">campaign</span> (
+    <span class="property">id</span>                      <span class="type">VARCHAR(36)</span> <span class="keyword">PRIMARY KEY DEFAULT</span> uuid(),
+    <span class="property">code</span>                    <span class="type">VARCHAR(15)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">type</span>                    <span class="type">TINYINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">status</span>                  <span class="type">TINYINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">end_reason</span>              <span class="type">TINYINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">start_at</span>                <span class="type">TIMESTAMP</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">end_at</span>                  <span class="type">TIMESTAMP</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">visibility_end_at</span>       <span class="type">TIMESTAMP</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">actual_end_at</span>           <span class="type">TIMESTAMP</span> <span class="keyword">NULL</span>,
+    <span class="property">timezone</span>                <span class="type">TIME</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">countdown_hourly</span>        <span class="type">SMALLINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">cost_notify_proportion</span>  <span class="type">TINYINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">prize_notify_proportion</span> <span class="type">TINYINT</span> <span class="keyword">NULL</span>,
+    <span class="property">budget</span>                  <span class="type">JSON</span> <span class="keyword">NULL</span>,
+    <span class="property">last_status</span>             <span class="type">TINYINT</span> <span class="keyword">NULL</span>,
+    <span class="property">creator_id</span>              <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">created_at</span>              <span class="type">TIMESTAMP</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">updater_id</span>              <span class="type">VARCHAR(36)</span> <span class="keyword">NULL</span>,
+    <span class="property">updated_at</span>              <span class="type">TIMESTAMP</span> <span class="keyword">NULL</span>,
+    <span class="property">is_archived</span>             <span class="type">BIT(1)</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
+    <span class="property">deleted</span>                 <span class="type">BIT(1)</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
     
-    <span class="keyword">UNIQUE KEY</span> uk_campaign_level_currency (campaign_id, level, currency)
+    <span class="keyword">INDEX</span> idx_deleted (deleted)
 );</code></pre>
+
+            <h3>campaign_frb_level</h3>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">定義 FRB 活動的階梯配置</p>
+<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">campaign_frb_level</span> (
+    <span class="property">id</span>                    <span class="type">BIGINT</span> <span class="keyword">PRIMARY KEY AUTO_INCREMENT</span>,
+    <span class="property">campaign_id</span>           <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">level</span>                 <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">currency_sn</span>           <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">threshold_cents</span>       <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">reward_count</span>          <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">max_payout_cents</span>      <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">ticket_count_limit</span>    <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">ticket_validity_days</span>  <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">3</span>,
+    <span class="property">created_at</span>            <span class="type">DATETIME</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP</span>,
+    <span class="property">updated_at</span>            <span class="type">DATETIME</span> <span class="keyword">NULL ON UPDATE CURRENT_TIMESTAMP</span>,
+    
+    <span class="keyword">INDEX</span> idx_campaign_id (campaign_id),
+    <span class="keyword">INDEX</span> idx_currency_sn (currency_sn)
+);</code></pre>
+
+            <div class="note">
+                <div class="note-title">📊 欄位說明</div>
+                <table style="margin-top: 12px;">
+                    <tr><th>欄位</th><th>說明</th></tr>
+                    <tr><td><code>threshold_cents</code></td><td>門檻金額 (Cent)</td></tr>
+                    <tr><td><code>reward_count</code></td><td>獎勵次數 (Free Rounds)</td></tr>
+                    <tr><td><code>max_payout_cents</code></td><td>單張票券最大派彩 (Cent)</td></tr>
+                    <tr><td><code>ticket_count_limit</code></td><td>該階梯可發放的票券總數限制</td></tr>
+                    <tr><td><code>ticket_validity_days</code></td><td>票券有效天數</td></tr>
+                </table>
+            </div>
         </section>
 
         <!-- OceanBase Schema -->
         <section id="spec-oceanbase">
-            <h2>🗃️ OceanBase Schema</h2>
+            <h2>🌊 OceanBase Schema</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">Database: <code>five_game_trans_dev</code> @ <code>oceanbase-dev</code></p>
+
             <h3>free_round_bonus_ticket</h3>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">代表發放給會員的 FRB 票券</p>
 <pre><code><span class="keyword">CREATE TABLE</span> <span class="type">free_round_bonus_ticket</span> (
     <span class="property">id</span>                      <span class="type">VARCHAR(36)</span> <span class="keyword">PRIMARY KEY</span>,
-    <span class="property">operator_id</span>             <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">member_id</span>               <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">game_id</span>                 <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">currency</span>                <span class="type">VARCHAR(10)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">free_rounds</span>             <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">bet_rate_cents</span>          <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">max_payout_cents</span>        <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">rounds_played</span>           <span class="type">INT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
-    <span class="property">accumulated_payout_cents</span> <span class="type">BIGINT</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="number">0</span>,
-    <span class="property">status</span>                  <span class="type">VARCHAR(20)</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="string">'pending'</span>,
-    <span class="property">source</span>                  <span class="type">VARCHAR(20)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">campaign_id</span>             <span class="type">INT</span> <span class="keyword">NULL</span>,
-    <span class="property">level</span>                   <span class="type">TINYINT</span> <span class="keyword">NULL</span>,
-    <span class="property">expires_at</span>              <span class="type">DATETIME</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">created_at</span>              <span class="type">DATETIME</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP</span>,
+    <span class="property">operator_id</span>             <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">member_id</span>               <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">account</span>                 <span class="type">VARCHAR(64)</span> <span class="keyword">NULL</span>,
+    <span class="property">campaign_id</span>             <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">expired_at</span>              <span class="type">TIMESTAMP</span> <span class="keyword">NULL</span>,
+    <span class="property">created_at</span>              <span class="type">TIMESTAMP(3)</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP(3)</span>,
+    <span class="property">updated_at</span>              <span class="type">TIMESTAMP</span> <span class="keyword">NULL</span>,
     
-    <span class="keyword">INDEX</span> idx_operator_member (operator_id, member_id),
-    <span class="keyword">INDEX</span> idx_status_expires (status, expires_at)
+    <span class="keyword">PRIMARY KEY</span> (id, member_id),
+    <span class="keyword">INDEX</span> idx_campaign_id (campaign_id),
+    <span class="keyword">INDEX</span> idx_expired_at (expired_at),
+    <span class="keyword">INDEX</span> idx_created_at (created_at)
 );</code></pre>
 
-            <h3>free_round_bonus_accounting</h3>
-<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">free_round_bonus_accounting</span> (
-    <span class="property">id</span>                  <span class="type">BIGINT</span> <span class="keyword">PRIMARY KEY AUTO_INCREMENT</span>,
-    <span class="property">ticket_id</span>           <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">round_number</span>        <span class="type">INT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">spin_id</span>             <span class="type">VARCHAR(50)</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">raw_win_cents</span>       <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">actual_payout_cents</span> <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">accumulated_cents</span>   <span class="type">BIGINT</span> <span class="keyword">NOT NULL</span>,
-    <span class="property">created_at</span>          <span class="type">DATETIME</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP</span>,
+            <h3>free_round_bonus_ticket_details</h3>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">包含票券的遊戲配置與狀態</p>
+<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">free_round_bonus_ticket_details</span> (
+    <span class="property">id</span>                      <span class="type">VARCHAR(36)</span> <span class="keyword">PRIMARY KEY</span>,
+    <span class="property">ticket_id</span>               <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">level</span>                   <span class="type">INT(11)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">game_id</span>                 <span class="type">VARCHAR(12)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">threshold</span>               <span class="type">INT(10) UNSIGNED</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">rate</span>                    <span class="type">INT(10) UNSIGNED</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">bet</span>                     <span class="type">INT(10) UNSIGNED</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">payout_multiplier_limit</span> <span class="type">INT(11)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">max_payout_cents</span>        <span class="type">BIGINT(20) UNSIGNED</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">reward_count</span>            <span class="type">INT(10) UNSIGNED</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">total_win</span>               <span class="type">BIGINT(20) UNSIGNED</span> <span class="keyword">NULL</span>,
+    <span class="property">encrypted</span>               <span class="type">LONGBLOB</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">status</span>                  <span class="type">VARCHAR(16)</span> <span class="keyword">NOT NULL DEFAULT</span> <span class="string">'pending'</span>,
+    <span class="property">finished_at</span>             <span class="type">TIMESTAMP</span> <span class="keyword">NULL</span>,
+    <span class="property">created_at</span>              <span class="type">TIMESTAMP(3)</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP(3)</span>,
+    <span class="property">updated_at</span>              <span class="type">TIMESTAMP</span> <span class="keyword">NULL</span>,
     
-    <span class="keyword">UNIQUE KEY</span> uk_ticket_round (ticket_id, round_number)
+    <span class="keyword">INDEX</span> idx_ticket_id (ticket_id),
+    <span class="keyword">INDEX</span> idx_game_id (game_id),
+    <span class="keyword">INDEX</span> idx_created_at (created_at)
 );</code></pre>
+
+            <h3>free_round_bonus_ticket_mapping</h3>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">映射票券詳情到會計交易記錄</p>
+<pre><code><span class="keyword">CREATE TABLE</span> <span class="type">free_round_bonus_ticket_mapping</span> (
+    <span class="property">id</span>                      <span class="type">VARCHAR(36)</span> <span class="keyword">PRIMARY KEY</span>,
+    <span class="property">frb_ticket_details_id</span>   <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">accounting_id</span>           <span class="type">VARCHAR(36)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">accounting_win</span>          <span class="type">BIGINT(20)</span> <span class="keyword">NOT NULL</span>,
+    <span class="property">created_at</span>              <span class="type">TIMESTAMP(3)</span> <span class="keyword">NOT NULL DEFAULT CURRENT_TIMESTAMP(3)</span>,
+    
+    <span class="keyword">PRIMARY KEY</span> (id, accounting_id),
+    <span class="keyword">INDEX</span> idx_frb_ticket_details_id (frb_ticket_details_id),
+    <span class="keyword">INDEX</span> idx_created_at (created_at)
+);</code></pre>
+
+            <div class="note">
+                <div class="note-title">🔗 資料表關聯</div>
+                <pre style="background: #0f172a; padding: 16px; border-radius: 8px; margin-top: 12px;"><code>campaign (MySQL)
+  └─1:N─> campaign_frb_level (MySQL)
+            └─level─> free_round_bonus_ticket_details (OceanBase)
+                        └─threshold_cents, max_payout_cents
+
+free_round_bonus_ticket (OceanBase)
+  └─1:N─> free_round_bonus_ticket_details
+            └─1:N─> free_round_bonus_ticket_mapping
+                      └─accounting_id (交易記錄)</code></pre>
+            </div>
+
+            <div class="note warning" style="margin-top: 16px;">
+                <div class="note-title">💡 設計要點</div>
+                <ul style="margin-left: 20px; color: #fef3c7;">
+                    <li>MySQL 儲存活動配置與階梯設定 (讀多寫少)</li>
+                    <li>OceanBase 儲存票券實例與交易記錄 (寫多讀少)</li>
+                    <li><code>status</code> 狀態: <code>pending</code>, <code>inuse</code>, <code>completed</code>, <code>expired</code></li>
+                    <li><code>encrypted</code> 欄位儲存加密的遊戲狀態資料</li>
+                    <li><code>total_win</code> 累計該票券的總獎金</li>
+                </ul>
+            </div>
         </section>
 
         <!-- Redis -->
